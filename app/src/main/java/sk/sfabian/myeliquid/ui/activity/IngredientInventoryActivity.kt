@@ -1,6 +1,5 @@
 package sk.sfabian.myeliquid.ui.activity
 
-import IngredientInventoryViewModel
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -29,10 +28,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
-import sk.sfabian.myeliquid.ui.theme.MyELiquidTheme
+import sk.sfabian.myeliquid.repository.IngredientInventoryRepository
+import sk.sfabian.myeliquid.repository.api.MockIngredientApi
+import sk.sfabian.myeliquid.repository.model.Ingredient
+import sk.sfabian.myeliquid.repository.room.AppDatabase
+import sk.sfabian.myeliquid.ui.viewmodel.IngredientInventoryViewModel
+import sk.sfabian.myeliquid.ui.viewmodel.IngredientInventoryViewModelFactory
 
 class IngredientInventoryActivity : AdminSharedScreenActivity() {
 
@@ -41,7 +44,12 @@ class IngredientInventoryActivity : AdminSharedScreenActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        viewModel = ViewModelProvider(this)[IngredientInventoryViewModel::class.java]
+        val database = AppDatabase.getDatabase(this)
+        val repository = IngredientInventoryRepository(database.ingredientDao(), MockIngredientApi())
+        //val repository = IngredientInventoryRepository(database.ingredientDao(), ApiClient.ingredientApi)
+        val factory = IngredientInventoryViewModelFactory(repository)
+        viewModel = ViewModelProvider(this, factory)[IngredientInventoryViewModel::class.java]
+        viewModel.fetchIngredients()
         setContent {
             AdminSharedScreen(
                 title = "MyE-Liquid"
@@ -51,12 +59,6 @@ class IngredientInventoryActivity : AdminSharedScreenActivity() {
         }
     }
 }
-
-data class Ingredient(
-    val id: Int,
-    val name: String,
-    val quantity: String
-)
 
 @Composable
 fun IngredientInventoryLayout(viewModel: IngredientInventoryViewModel) {
@@ -149,14 +151,5 @@ fun IngredientCard(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun IngredientInventoryPreview() {
-    MyELiquidTheme {
-        val viewModel = IngredientInventoryViewModel()
-        IngredientInventoryLayout(viewModel = viewModel)
     }
 }

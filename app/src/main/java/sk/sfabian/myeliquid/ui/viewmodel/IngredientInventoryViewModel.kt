@@ -1,31 +1,37 @@
+package sk.sfabian.myeliquid.ui.viewmodel
+
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import sk.sfabian.myeliquid.ui.activity.Ingredient
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import sk.sfabian.myeliquid.repository.IngredientInventoryRepository
+import sk.sfabian.myeliquid.repository.model.Ingredient
 
-class IngredientInventoryViewModel : ViewModel() {
-    private val _ingredients = MutableStateFlow<List<Ingredient>>(
-        listOf(
-            Ingredient(1, "Nicotine", "50ml"),
-            Ingredient(2, "VG", "200ml"),
-            Ingredient(3, "PG", "150ml"),
-            Ingredient(4, "Strawberry Flavor", "30ml")
-        )
+class IngredientInventoryViewModel(private val repository: IngredientInventoryRepository) : ViewModel() {
+
+    val ingredients: StateFlow<List<Ingredient>> = repository.ingredients.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
     )
-    val ingredients: StateFlow<List<Ingredient>> = _ingredients.asStateFlow()
 
-    fun addIngredient(ingredient: Ingredient) {
-        _ingredients.value += ingredient
+    fun fetchIngredients() {
+        viewModelScope.launch {
+            repository.fetchAndStoreIngredients()
+        }
     }
 
-    fun updateIngredient(ingredient: Ingredient) {
-        _ingredients.value = _ingredients.value.map {
-            if (it.id == ingredient.id) ingredient else it
+    fun addIngredient(ingredient: Ingredient) {
+        viewModelScope.launch {
+            repository.addIngredient(ingredient)
         }
     }
 
     fun deleteIngredient(ingredient: Ingredient) {
-        _ingredients.value = _ingredients.value.filter { it.id != ingredient.id }
+        viewModelScope.launch {
+            repository.deleteIngredient(ingredient)
+        }
     }
 }

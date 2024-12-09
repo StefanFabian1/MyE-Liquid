@@ -73,6 +73,7 @@ dependencies {
 
     // Room database
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
     // RecyclerView and Material Design
@@ -81,6 +82,12 @@ dependencies {
 
     // WorkManager for asynchronous tasks
     implementation(libs.androidx.work.runtime.ktx)
+
+    // Retrofit (API)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+
+    implementation (libs.kotlinx.coroutines.android)
 }
 java {
     toolchain {
