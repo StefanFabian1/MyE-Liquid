@@ -1,6 +1,7 @@
 package sk.sfabian.myeliquid.ui.activity
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 class HomeActivity : AdminSharedScreenActivity() {
@@ -153,5 +155,20 @@ fun CriticalNotifications() {
                 modifier = Modifier.padding(vertical = 4.dp)
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeActivityPreview() {
+    MaterialTheme {
+        HomeActivityLayout()
+    }
+}
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun HomeActivityPreviewDark() {
+    MaterialTheme {
+        HomeActivityLayout()
     }
 }

@@ -1,5 +1,6 @@
 package sk.sfabian.myeliquid.ui.activity
 
+import IngredientInventoryViewModel
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,28 +24,29 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import sk.sfabian.myeliquid.ui.theme.MyELiquidTheme
 
 class IngredientInventoryActivity : AdminSharedScreenActivity() {
 
-    private lateinit var binding: ActivityIngredientInventoryBinding
-    private val viewModel: IngredientInventoryViewModel by viewModels()
+    private lateinit var viewModel: IngredientInventoryViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        viewModel = ViewModelProvider(this)[IngredientInventoryViewModel::class.java]
         setContent {
-            AdminSharedScreen (
+            AdminSharedScreen(
                 title = "MyE-Liquid"
             ) {
-                IngredientInventoryLayout()
+                IngredientInventoryLayout(viewModel = viewModel)
             }
         }
     }
@@ -57,15 +59,8 @@ data class Ingredient(
 )
 
 @Composable
-fun IngredientInventoryLayout() {
-    val ingredients = remember {
-        mutableStateListOf(
-            Ingredient(1, "Nicotine", "50ml"),
-            Ingredient(2, "VG", "200ml"),
-            Ingredient(3, "PG", "150ml"),
-            Ingredient(4, "Strawberry Flavor", "30ml")
-        )
-    }
+fun IngredientInventoryLayout(viewModel: IngredientInventoryViewModel) {
+    val ingredients by viewModel.ingredients.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -88,8 +83,8 @@ fun IngredientInventoryLayout() {
                 items(ingredients) { ingredient ->
                     IngredientCard(
                         ingredient = ingredient,
-                        onEdit = { /* TODO: Implement edit functionality */ },
-                        onDelete = { ingredients.remove(ingredient) }
+                        onEdit = { /* TODO: Implement edit functionality using viewModel.updateIngredient */ },
+                        onDelete = { viewModel.deleteIngredient(ingredient) }
                     )
                 }
             }
@@ -161,6 +156,7 @@ fun IngredientCard(
 @Composable
 fun IngredientInventoryPreview() {
     MyELiquidTheme {
-        IngredientInventoryLayout()
+        val viewModel = IngredientInventoryViewModel()
+        IngredientInventoryLayout(viewModel = viewModel)
     }
 }
