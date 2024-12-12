@@ -31,7 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import sk.sfabian.myeliquid.repository.IngredientInventoryRepository
-import sk.sfabian.myeliquid.repository.api.MockIngredientApi
+import sk.sfabian.myeliquid.repository.api.ApiClient
 import sk.sfabian.myeliquid.repository.model.Ingredient
 import sk.sfabian.myeliquid.repository.room.AppDatabase
 import sk.sfabian.myeliquid.ui.viewmodel.IngredientInventoryViewModel
@@ -45,8 +45,7 @@ class IngredientInventoryActivity : AdminSharedScreenActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val database = AppDatabase.getDatabase(this)
-        val repository = IngredientInventoryRepository(database.ingredientDao(), MockIngredientApi())
-        //val repository = IngredientInventoryRepository(database.ingredientDao(), ApiClient.ingredientApi)
+        val repository = IngredientInventoryRepository(database.ingredientDao(), ApiClient.ingredientApi)
         val factory = IngredientInventoryViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[IngredientInventoryViewModel::class.java]
         viewModel.fetchIngredients()

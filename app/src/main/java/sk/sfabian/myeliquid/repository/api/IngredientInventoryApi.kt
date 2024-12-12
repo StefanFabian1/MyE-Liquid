@@ -11,5 +11,5 @@ interface IngredientInventoryApi {
     suspend fun addIngredient(@Body ingredient: Ingredient)
 
     @DELETE("ingredients/{id}")
-    suspend fun deleteIngredient(@Path("id") id: Int)
+    suspend fun deleteIngredient(@Path("id") id: String)
 }

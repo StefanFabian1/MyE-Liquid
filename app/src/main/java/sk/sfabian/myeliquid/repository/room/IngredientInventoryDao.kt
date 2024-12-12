@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
+import org.bson.types.ObjectId
 import sk.sfabian.myeliquid.repository.model.Ingredient
 
 @Dao
@@ -17,7 +18,7 @@ interface IngredientInventoryDao {
         suspend fun insertIngredient(ingredient: Ingredient)
 
         @Query("DELETE FROM ingredients WHERE id = :id")
-        suspend fun deleteIngredient(id: Int)
+        suspend fun deleteIngredient(id: ObjectId)
 
         @Transaction
         suspend fun replaceAllIngredients(ingredients: List<Ingredient>) {
