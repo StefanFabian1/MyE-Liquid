@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import sk.sfabian.myeliquid.repository.api.IngredientInventoryApi
+import sk.sfabian.myeliquid.repository.api.IngredientSseHandler
 import sk.sfabian.myeliquid.repository.model.Ingredient
 import sk.sfabian.myeliquid.repository.room.IngredientInventoryDao
 
@@ -13,8 +14,13 @@ class IngredientInventoryRepository(
     private val ingredientApi: IngredientInventoryApi
 ) {
 
-    private val mutex = Mutex()
+    private val sseHandler = IngredientSseHandler(ingredientApi, ingredientDao)
 
+    init {
+        sseHandler.startListening() // Spustenie SSE
+    }
+
+    private val mutex = Mutex()
     val ingredients: Flow<List<Ingredient>> = ingredientDao.getAllIngredients()
 
     suspend fun fetchAndStoreIngredients() {
@@ -31,7 +37,7 @@ class IngredientInventoryRepository(
     }
 
     suspend fun deleteIngredient(ingredient: Ingredient) {
-        ingredientApi.deleteIngredient(ingredient.id.toHexString())
+        ingredientApi.deleteIngredient(ingredient.id)
         ingredientDao.deleteIngredient(ingredient.id)
     }
 }

@@ -48,7 +48,7 @@ class IngredientInventoryActivity : AdminSharedScreenActivity() {
         val repository = IngredientInventoryRepository(database.ingredientDao(), ApiClient.ingredientApi)
         val factory = IngredientInventoryViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[IngredientInventoryViewModel::class.java]
-        viewModel.fetchIngredients()
+        //viewModel.fetchIngredients()
         setContent {
             AdminSharedScreen(
                 title = "MyE-Liquid"
