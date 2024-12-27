@@ -6,30 +6,82 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import org.bson.types.ObjectId
+import sk.sfabian.myeliquid.repository.model.Category
 import sk.sfabian.myeliquid.repository.model.Ingredient
+import sk.sfabian.myeliquid.repository.model.Movement
+import sk.sfabian.myeliquid.repository.model.Subcategory
 
 @Dao
 interface IngredientInventoryDao {
 
-        @Query("SELECT * FROM ingredients")
-        fun getAllIngredients(): Flow<List<Ingredient>>
+    //READ
+    @Query("SELECT * FROM ingredients")
+    fun getAllIngredients(): Flow<List<Ingredient>>
 
-        @Insert(onConflict = OnConflictStrategy.REPLACE)
-        suspend fun insertIngredient(ingredient: Ingredient)
+    @Query("SELECT * FROM ingredients WHERE name = :name")
+    suspend fun getIngredientByName(name: String): Ingredient?
 
-        @Query("DELETE FROM ingredients WHERE id = :id")
-        suspend fun deleteIngredient(id: String)
+    @Query("UPDATE ingredients SET mongoId = :mongoId WHERE localId = :localId")
+    suspend fun updateIngredientMongoId(localId: Long, mongoId: String)
 
-        @Transaction
-        suspend fun replaceAllIngredients(ingredients: List<Ingredient>) {
-            deleteAll()
-            insertAll(ingredients)
-        }
+    @Query("SELECT COUNT(*) FROM ingredients WHERE category = :categoryText")
+    suspend fun countIngredientsInCategory(categoryText: String): Int
 
-        @Query("DELETE FROM ingredients")
-        suspend fun deleteAll()
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertIngredient(ingredient: Ingredient): Long
 
-        @Insert
-        suspend fun insertAll(ingredients: List<Ingredient>)
+    @Query("DELETE FROM ingredients WHERE localId = :id")
+    suspend fun deleteIngredient(id: String)
+
+    @Transaction
+    suspend fun replaceAllIngredients(ingredients: List<Ingredient>) {
+        deleteAll()
+        insertAll(ingredients)
     }
+
+    @Query("DELETE FROM ingredients")
+    suspend fun deleteAll()
+
+    @Insert
+    suspend fun insertAll(ingredients: List<Ingredient>)
+}
+
+@Dao
+interface MovementDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMovement(movement: Movement)
+}
+
+@Dao
+interface CategoryDao {
+
+    @Query("SELECT * FROM categories")
+    fun getAllCategories(): Flow<List<Category>>
+
+    @Transaction
+    suspend fun replaceAllCategories(categories: List<Category>) {
+        deleteAll()
+        insertAll(categories)
+    }
+
+    @Query("DELETE FROM categories")
+    suspend fun deleteAll()
+
+    @Insert
+    suspend fun insertAll(ingredients: List<Category>)
+}
+
+@Dao
+interface SubcategoryDao {
+    @Transaction
+    suspend fun replaceAllSubcategories(subcategories: List<Subcategory>) {
+        deleteAll()
+        insertAll(subcategories)
+    }
+
+    @Query("DELETE FROM subcategories")
+    suspend fun deleteAll()
+
+    @Insert
+    suspend fun insertAll(ingredients: List<Subcategory>)
+}

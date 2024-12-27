@@ -1,5 +1,4 @@
 package sk.sfabian.myeliquid.ui.theme
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -11,45 +10,54 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
+// Light Mode Farebná schéma
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF4CAF50),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFA5D6A7),
-    onPrimaryContainer = Color(0xFF002411),
-    secondary = Color(0xFF3F51B5),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFCCF3CD),
-    onSecondaryContainer = Color(0xFF002411),
-    background = Color(0xFFECF7EC),
-    onBackground = Color(0xFF1B5E20),
-    surface = Color(0xFFF0F3F0),
-    onSurface = Color(0xFF212121),
-    error = Color(0xFFF44336),
-    onError = Color(0xFFFFFFFF),
-    outline = Color(0xFFBDBDBD)
+    primary = Color(0xFF4A90E2),            // Svetlomodrá
+    onPrimary = Color.White,                // Text na hlavnej farbe
+    primaryContainer = Color(0xFF80BDF0),   // Svetlejšia modrá pre povrchy
+    onPrimaryContainer = Color(0xFF00274D), // Text na svetlejších povrchoch
+
+    secondary = Color(0xFFF5A623),          // Jemná oranžová
+    onSecondary = Color.White,              // Text na sekundárnej farbe
+    secondaryContainer = Color(0xD7FFD280), // Svetlá oranžová
+    onSecondaryContainer = Color(0xFF5A2A00), // Text na svetlých povrchoch
+
+    background = Color(0xFFF7F9FC),         // Jemné svetlé pozadie
+    onBackground = Color(0xFF1C1F26),       // Text na pozadí
+
+    surface = Color.White,                  // Povrchové komponenty
+    onSurface = Color(0xFF1C1F26),          // Text na povrchu
+
+    error = Color(0xFFFF4C4C),              // Červená pre chyby
+    onError = Color.White                   // Text na chybových povrchoch
 )
 
+// Dark Mode Farebná schéma
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF2F2F2F),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFB2E0B2),
-    onPrimaryContainer = Color.White,
-    secondary = Color(0xFF03DAC6),
-    onSecondary = Color.Black,
-    secondaryContainer = Color(0xFF00574B),
-    onSecondaryContainer = Color.White,
-    background = Color(0xFF121212),
-    onBackground = Color(0xFFE0E0E0),
-    surface = Color(0xFF1E1E1E),
-    onSurface = Color(0xFFE0E0E0),
-    error = Color(0xFFCF6679),
-    onError = Color.Black
+    primary = Color(0xFF80BDF0),            // Svetlomodrá
+    onPrimary = Color(0xFF00274D),          // Text na hlavnej farbe
+    primaryContainer = Color(0xFF4A90E2),   // Tmavomodrá pre povrchy
+    onPrimaryContainer = Color.White,       // Text na povrchoch
+
+    secondary = Color(0xFFFFD280),          // Svetlá oranžová
+    onSecondary = Color(0xFF5A2A00),        // Text na sekundárnej farbe
+    secondaryContainer = Color(0xFFF5A623), // Oranžová pre povrchy
+    onSecondaryContainer = Color.White,     // Text na svetlých povrchoch
+
+    background = Color(0xFF1C1F26),         // Tmavé pozadie
+    onBackground = Color(0xFFF7F9FC),       // Text na pozadí
+
+    surface = Color(0xFF2E3338),            // Povrchové komponenty
+    onSurface = Color(0xFFF7F9FC),          // Text na povrchu
+
+    error = Color(0xFFFF4C4C),              // Červená pre chyby
+    onError = Color(0xFF3B0000)             // Text na chybových povrchoch
 )
 
 @Composable
 fun MyELiquidTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    //s tymto sa treba pohrat, celkom zaujimave
+    //nepouziva sa --- s tymto sa treba pohrat, celkom zaujimave
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
@@ -63,7 +71,7 @@ fun MyELiquidTheme(
     }
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = AppTypography,
         content = content
     )
 }

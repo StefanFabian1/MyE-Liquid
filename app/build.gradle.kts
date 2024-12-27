@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -79,6 +80,7 @@ dependencies {
     // RecyclerView and Material Design
     implementation(libs.androidx.recyclerview)
     implementation(libs.material)
+    implementation (libs.androidx.material.icons.extended)
 
     // WorkManager for asynchronous tasks
     implementation(libs.androidx.work.runtime.ktx)
