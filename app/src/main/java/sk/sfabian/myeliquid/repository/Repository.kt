@@ -9,7 +9,6 @@ class Repository(
     suspend fun fetchAndStoreAllData() {
         val repository = IngredientInventoryRepository(
             database.ingredientDao(), ApiClient.ingredientApi,
-            movementDao = database.movementDao(),
             categoryDao = database.categoryDao(),
             subcategoryDao = database.subCategoryDao()
         )

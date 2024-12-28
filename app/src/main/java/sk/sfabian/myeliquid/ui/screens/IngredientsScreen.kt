@@ -18,26 +18,27 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,23 +46,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.window.Popup
 import androidx.navigation.NavHostController
 import sk.sfabian.myeliquid.repository.model.Category
 import sk.sfabian.myeliquid.repository.model.Ingredient
+import sk.sfabian.myeliquid.repository.model.Subcategory
 import sk.sfabian.myeliquid.ui.viewmodel.IngredientInventoryViewModel
 
 @Composable
 fun IngredientsScreen(viewModel: IngredientInventoryViewModel, navController: NavHostController) {
     viewModel.fetchIngredients()
     val ingredients by viewModel.ingredients.collectAsState(initial = emptyList())
+    val searchQuery by viewModel.searchQuery.collectAsState()
     val categories by viewModel.categories.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var showDetailDialog by remember { mutableStateOf(false) }
     var selectedIngredient by remember { mutableStateOf<Ingredient?>(null) }
     var showAddNewDialog by remember { mutableStateOf(false) }
-
+    var showEditDialog by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier
@@ -81,6 +91,38 @@ fun IngredientsScreen(viewModel: IngredientInventoryViewModel, navController: Na
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Top
             ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        label = { Text("Hľadať ingrediencie") },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Vyhľadať"
+                            )
+                        }
+                    )
+                    IconButton(
+                        onClick = { /* Clear search */ viewModel.updateSearchQuery("") },
+                        modifier = Modifier.size(48.dp).padding(top = 5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CleaningServices,
+                            contentDescription = "Zrušiť vyhľadávanie",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize()
@@ -97,7 +139,6 @@ fun IngredientsScreen(viewModel: IngredientInventoryViewModel, navController: Na
                                 showDetailDialog = true
                             },
                             onMovementsClick = {
-                                // Navigácia na pohyby obrazovku
                                 viewModel.navigateToMovements(
                                     ingredient,
                                     navController
@@ -111,12 +152,14 @@ fun IngredientsScreen(viewModel: IngredientInventoryViewModel, navController: Na
                 AddIngredientDialog(
                     ingredient = selectedIngredient!!,
                     onDismiss = { showAddDialog = false },
-                    onConfirm = { quantity, price ->
+                    onConfirm = { quantity, totalPrice, type ->
                         viewModel.addIngredientMovement(
-                            ingredient = selectedIngredient!!,
-                            quantityAdded = quantity,
-                            totalPrice = price
+                            ingredientId = selectedIngredient!!.mongoId ?: "",
+                            quantity = quantity,
+                            totalPrice = totalPrice,
+                            type = type
                         )
+                        showAddDialog = false
                     }
                 )
             }
@@ -126,9 +169,22 @@ fun IngredientsScreen(viewModel: IngredientInventoryViewModel, navController: Na
                     ingredient = selectedIngredient!!,
                     onDismiss = { showDetailDialog = false },
                     onEditClick = {
-                        // Navigácia alebo iná logika pre editáciu
-                        //viewModel.editIngredient(selectedIngredient!!)
                         showDetailDialog = false
+                        showEditDialog = true
+                    },
+                    onDeleteClick = {
+                        viewModel.deleteIngredient(selectedIngredient!!)
+                        showDetailDialog = false
+                    }
+                )
+            }
+
+            if (showEditDialog && selectedIngredient != null) {
+                IngredientEditDialog(
+                    ingredient = selectedIngredient!!,
+                    onDismiss = { showEditDialog = false },
+                    onConfirm = { updatedIngredient ->
+                        viewModel.updateIngredient(updatedIngredient)
                     }
                 )
             }
@@ -143,10 +199,9 @@ fun IngredientsScreen(viewModel: IngredientInventoryViewModel, navController: Na
                     onDeleteCategory = { categoryName ->
                         viewModel.deleteCategory(categoryName)
                     },
-                    onConfirm = { name, quantity, unit, price ->
-                        viewModel.addNewIngredient(name, quantity, unit, price)
-                    },
-                    viewModel
+                    onConfirm = { name, category, quantity, unit, price ->
+                        viewModel.addNewIngredient(name, category, quantity, unit, price)
+                    }
                 )
             }
 
@@ -219,7 +274,7 @@ fun IngredientCard(
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "Kategória: základ",
+                    text = "Kategória: ${ingredient.category}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary
                 )
@@ -230,7 +285,6 @@ fun IngredientCard(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Tlačidlo "Pridať" s rovnakou šírkou
                 Button(
                     onClick = onAddClick,
                     colors = ButtonDefaults.buttonColors(
@@ -239,7 +293,7 @@ fun IngredientCard(
                     ),
                     shape = RoundedCornerShape(50),
                     modifier = Modifier
-                        .width(120.dp) // Rovnaká šírka tlačidiel
+                        .width(120.dp)
                         .height(36.dp)
                 ) {
                     Icon(
@@ -289,10 +343,11 @@ fun IngredientCard(
 fun AddIngredientDialog(
     ingredient: Ingredient,
     onDismiss: () -> Unit,
-    onConfirm: (Double, Double) -> Unit
+    onConfirm: (Double, Double, String) -> Unit
 ) {
     var quantity by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
+    var movementType by remember { mutableStateOf("ADD") }
 
     AlertDialog(
         onDismissRequest = { onDismiss() },
@@ -311,13 +366,24 @@ fun AddIngredientDialog(
                     label = { Text("Cena (€)") },
                     singleLine = true
                 )
+                DropdownSelector(
+                    items = listOf("ADD", "REMOVE"),
+                    selectedItem = movementType,
+                    onItemSelected = {
+                        if (it != null) {
+                            movementType = it
+                        }
+                    },
+                    label = "Typ pohybu",
+                    itemText = { it }
+                )
             }
         },
         confirmButton = {
             Button(onClick = {
                 val quantityValue = quantity.toDoubleOrNull() ?: 0.0
                 val priceValue = price.toDoubleOrNull() ?: 0.0
-                onConfirm(quantityValue, priceValue)
+                onConfirm(quantityValue, priceValue, movementType)
                 onDismiss()
             }) {
                 Text("Pridať")
@@ -335,15 +401,39 @@ fun AddIngredientDialog(
 fun IngredientDetailDialog(
     ingredient: Ingredient,
     onDismiss: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = { onDismiss() },
-        title = { Text(text = "Detail Ingrediencie") },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Detail Ingrediencie")
+                IconButton(
+                    onClick = { onDeleteClick() },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Cancel,
+                        contentDescription = "Zmazať ingredienciu",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
         text = {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Názov: ${ingredient.name}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "Kategória: ${ingredient.category}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -357,6 +447,23 @@ fun IngredientDetailDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+                if (ingredient.category.equals("aróma")) {
+                    Text(
+                        text = "Subkategória: ${ingredient.subcategory}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "Brand: ${ingredient.brand}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "Popis: ${ingredient.description}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
                 Text(
                     text = "ID: ${ingredient.mongoId}",
                     style = MaterialTheme.typography.bodySmall,
@@ -393,19 +500,311 @@ fun AddNewIngredientDialog(
     onDismiss: () -> Unit,
     onAddCategory: (String) -> Unit,
     onDeleteCategory: (Category) -> Unit,
-    onConfirm: (String, Double, String, Double) -> Unit,
-    viewModel: IngredientInventoryViewModel
+    onConfirm: (String, Category?, Double, String, Double) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
-    var showAddCategoryDialog by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = { onDismiss() },
         title = { Text("Pridať novú ingredienciu") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Názov") },
+                    singleLine = true
+                )
+                CategorySelector(
+                    categories = categories,
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { selectedCategory = it },
+                    onAddCategory = onAddCategory,
+                    onDeleteCategory = onDeleteCategory
+                )
+                OutlinedTextField(
+                    value = quantity,
+                    onValueChange = { quantity = it },
+                    label = { Text("Množstvo") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = unit,
+                    onValueChange = { unit = it },
+                    label = { Text("Jednotka") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = price,
+                    onValueChange = { price = it },
+                    label = { Text("Cena (€)") },
+                    singleLine = true
+                )
+
+                /*
+                                val category: String,
+                                val subcategory: String?,
+                                val brand: String?,
+                                val description: String?
+
+                 */
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val quantityValue = quantity.toDoubleOrNull() ?: 0.0
+                val priceValue = price.toDoubleOrNull() ?: 0.0
+                onConfirm(name, selectedCategory, quantityValue, unit, priceValue)
+                onDismiss()
+            }) {
+                Text("Pridať")
+            }
+        },
+        dismissButton = {
+            Button(onClick = { onDismiss() }) {
+                Text("Zrušiť")
+            }
+        }
+    )
+}
+
+@Composable
+fun CategorySelector(
+    categories: List<Category>,
+    selectedCategory: Category?,
+    onCategorySelected: (Category?) -> Unit,
+    onAddCategory: (String) -> Unit,
+    onDeleteCategory: (Category) -> Unit
+) {
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+
+    DropdownSelector(
+        items = categories,
+        selectedItem = selectedCategory,
+        onItemSelected = onCategorySelected,
+        onAddItem = { showAddCategoryDialog = true },
+        onDeleteItem = onDeleteCategory,
+        label = "Kategória",
+        itemText = { it.text }
+    )
+
+    if (showAddCategoryDialog) {
+        AddCategoryDialog(
+            onDismiss = { showAddCategoryDialog = false },
+            onConfirm = { newCategory ->
+                onAddCategory(newCategory)
+                showAddCategoryDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun SubcategorySelector(
+    subcategories: List<Subcategory>,
+    selectedSubcategory: Subcategory?,
+    onSubcategorySelected: (Subcategory?) -> Unit,
+    onAddSubcategory: (String) -> Unit,
+    onDeleteSubcategory: (Subcategory) -> Unit
+) {
+    DropdownSelector(
+        items = subcategories,
+        selectedItem = selectedSubcategory,
+        onItemSelected = onSubcategorySelected,
+        onAddItem = { onAddSubcategory("Nová subkategória") },
+        onDeleteItem = onDeleteSubcategory,
+        label = "Subkategória",
+        itemText = { it.text }
+    )
+}
+
+@Composable
+fun AddCategoryDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var categoryName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Pridať novú kategóriu") },
+        text = {
+            OutlinedTextField(
+                value = categoryName,
+                onValueChange = { categoryName = it },
+                label = { Text("Názov kategórie") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            Button(onClick = {
+                onConfirm(categoryName)
+            }) {
+                Text("Pridať")
+            }
+        },
+        dismissButton = {
+            Button(onClick = { onDismiss() }) {
+                Text("Zrušiť")
+            }
+        }
+    )
+}
+
+@Composable
+fun ClickableOutlinedTextField(
+    value: String,
+    onClick: () -> Unit,
+    label: String,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() } // Celý Box je klikateľný
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            label = { Text(label) },
+            readOnly = true, // Zamedzenie vstupu
+            trailingIcon = trailingIcon,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.Transparent) // Transparentnosť, aby kliknutie na Box nebolo blokované
+        )
+
+        // Prekrytie, ktoré zachytáva kliknutia
+        Box(
+            modifier = Modifier
+                .matchParentSize() // Prekrytie celej veľkosti OutlinedTextField
+                .clickable { onClick() } // Získanie kliknutí
+        )
+    }
+}
+
+@Composable
+fun <T> DropdownSelector(
+    items: List<T>,
+    selectedItem: T?,
+    onItemSelected: (T?) -> Unit,
+    onAddItem: (() -> Unit)? = null,
+    onDeleteItem: ((T) -> Unit)? = null,
+    label: String,
+    itemText: (T) -> String
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+
+    ClickableOutlinedTextField(
+        value = selectedItem?.let(itemText) ?: "",
+        onClick = { expanded = true },
+        label = label,
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Rozbaľovací zoznam",
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                textFieldSize = coordinates.size.toSize()
+            }
+    )
+
+    if (expanded) {
+        Popup(
+            alignment = Alignment.TopStart,
+            onDismissRequest = { expanded = false },
+            offset = IntOffset(0, textFieldSize.height.toInt() * 2)
+        ) {
+            Column(
+                modifier = Modifier
+                    .width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                    .background(
+                        color = MaterialTheme.colorScheme.background,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .padding(8.dp)
+            ) {
+                items.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onItemSelected(item)
+                                expanded = false
+                            }
+                            .padding(start = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = itemText(item),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (onDeleteItem != null) {
+                            IconButton(
+                                onClick = {
+                                    onDeleteItem(item)
+                                    expanded = false
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Cancel,
+                                    contentDescription = "Zmazať položku",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    )
+                }
+                /*
+                if (onAddItem != null) {
+                    TextButton(
+                        onClick = {
+                            onAddItem()
+                            expanded = false
+                        }
+                    ) {
+                        Text("Pridať novú položku")
+                    }
+                }
+                */
+            }
+        }
+    }
+}
+
+@Composable
+fun IngredientEditDialog(
+    ingredient: Ingredient,
+    onDismiss: () -> Unit,
+    onConfirm: (Ingredient) -> Unit
+) {
+    var name by remember { mutableStateOf(ingredient.name) }
+    var quantity by remember { mutableStateOf(ingredient.quantity.toString()) }
+    var unit by remember { mutableStateOf(ingredient.unit) }
+    var price by remember { mutableStateOf(ingredient.unitPrice.toString()) }
+    var category by remember { mutableStateOf(ingredient.category) }
+    var subcategory by remember { mutableStateOf(ingredient.subcategory ?: "") }
+    var brand by remember { mutableStateOf(ingredient.brand ?: "") }
+    var description by remember { mutableStateOf(ingredient.description ?: "") }
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Upraviť ingredienciu") },
         text = {
             Column {
                 OutlinedTextField(
@@ -432,160 +831,51 @@ fun AddNewIngredientDialog(
                     label = { Text("Cena (€)") },
                     singleLine = true
                 )
-                CategorySelector(
-                    categories = categories,
-                    selectedCategory = selectedCategory,
-                    onCategorySelected = { selectedCategory = it },
-                    onAddCategory = onAddCategory,
-                    onDeleteCategory = onDeleteCategory
+                category?.let { text ->
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { category = it },
+                        label = { Text("Kategória") },
+                        singleLine = true
+                    )
+                }
+                OutlinedTextField(
+                    value = subcategory,
+                    onValueChange = { subcategory = it },
+                    label = { Text("Subkategória") },
+                    singleLine = true
                 )
-/*
-                val category: String,
-                val subcategory: String?,
-                val brand: String?,
-                val description: String?
-
- */
+                OutlinedTextField(
+                    value = brand,
+                    onValueChange = { brand = it },
+                    label = { Text("Značka") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Popis") },
+                    singleLine = false,
+                    maxLines = 4
+                )
             }
         },
         confirmButton = {
             Button(onClick = {
-                val quantityValue = quantity.toDoubleOrNull() ?: 0.0
-                val priceValue = price.toDoubleOrNull() ?: 0.0
-                val categoryText = selectedCategory?.text ?: ""
-                onConfirm(name, quantityValue, unit, priceValue)
+                val updatedIngredient = ingredient.copy(
+                    name = name,
+                    quantity = quantity.toDoubleOrNull() ?: 0.0,
+                    unit = unit,
+                    unitPrice = price.toDoubleOrNull() ?: 0.0,
+                    category = category,
+                    subcategory = subcategory.takeIf { it.isNotBlank() },
+                    brand = brand.takeIf { it.isNotBlank() },
+                    description = description.takeIf { it.isNotBlank() }
+                )
+                onConfirm(updatedIngredient)
                 onDismiss()
             }) {
-                Text("Pridať")
-            }
-        },
-        dismissButton = {
-            Button(onClick = { onDismiss() }) {
-                Text("Zrušiť")
-            }
-        }
-    )
-
-    if (showAddCategoryDialog) {
-        AddCategoryDialog(
-            onDismiss = { showAddCategoryDialog = false },
-            onConfirm = { newCategory ->
-                onAddCategory(newCategory)
-                showAddCategoryDialog = false
-            }
-        )
-    }
-}
-
-@Composable
-fun CategorySelector(
-    categories: List<Category>,
-    selectedCategory: Category?,
-    onCategorySelected: (Category?) -> Unit,
-    onAddCategory: (String) -> Unit,
-    onDeleteCategory: (Category) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var showAddCategoryDialog by remember { mutableStateOf(false) }
-
-    Column {
-        Text(text = "Vyberte kategóriu", style = MaterialTheme.typography.labelLarge)
-
-        // Dropdown Trigger
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(4.dp))
-                .clickable { expanded = true }
-                .padding(12.dp)
-        ) {
-            Text(
-                text = selectedCategory?.text ?: "Vyberte kategóriu",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        // DropdownMenu
-        DropdownMenu (
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            categories.forEach { category ->
-                DropdownMenuItem(
-                    onClick = {
-                        onCategorySelected(category)
-                        expanded = false
-                    },
-                    text = {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = category.text, style = MaterialTheme.typography.bodyLarge)
-                            IconButton(
-                                onClick = {
-                                    onDeleteCategory(category)
-                                    expanded = false
-                                },
-                                enabled = true // Vložiť podmienku, ak kategória nie je použitá
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Zmazať kategóriu",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-            DropdownMenuItem(
-                onClick = {
-                    showAddCategoryDialog = true
-                    expanded = false
-                },
-                text = { Text("Pridať novú kategóriu") }
-            )
-        }
-
-        // Dialóg pre pridanie kategórie
-        if (showAddCategoryDialog) {
-            AddCategoryDialog(
-                onDismiss = { showAddCategoryDialog = false },
-                onConfirm = { newCategory ->
-                    onAddCategory(newCategory)
-                    showAddCategoryDialog = false
-                }
-            )
-        }
-    }
-}
-
-
-
-@Composable
-fun AddCategoryDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
-    var categoryName by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = { onDismiss() },
-        title = { Text("Pridať novú kategóriu") },
-        text = {
-            OutlinedTextField(
-                value = categoryName,
-                onValueChange = { categoryName = it },
-                label = { Text("Názov kategórie") },
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            Button(onClick = {
-                onConfirm(categoryName)
-            }) {
-                Text("Pridať")
+                Text("Uložiť")
             }
         },
         dismissButton = {

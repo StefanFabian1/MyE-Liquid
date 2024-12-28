@@ -18,7 +18,10 @@ class IngredientSseHandler(
     private val api: IngredientInventoryApi,
     private val dao: IngredientInventoryDao
 ) {
+
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    var onIngredientsUpdated: (() -> Unit)? = null
 
     fun startListening() {
         val call = api.streamIngredients()
@@ -54,14 +57,30 @@ class IngredientSseHandler(
             when (data.first()) {
                 'A', 'U' -> {
                     val ingredient = parseJson<Ingredient>(data.substring(1))
-                    coroutineScope.launch { dao.insertIngredient(ingredient) }
+
+                    coroutineScope.launch {
+                        val localIngredient = ingredient.mongoId?.let {
+                            dao.getIngredientByMongoIdAndName(
+                                mongoId = it,
+                                name = ingredient.name
+                            )
+                        }
+                        if (localIngredient != null) {
+                            val ingredientToUpdate = ingredient.copy(localId = localIngredient.localId)
+                            dao.update(ingredientToUpdate)
+                        } else {
+                            dao.insertIngredient(ingredient)
+                        }
+                        onIngredientsUpdated?.invoke()
+                    }
                 }
                 'D' -> {
                     val delData = parseJson<Map<String, String>>(data.substring(1))
                     val id = delData["_id"]
                     coroutineScope.launch {
                         if (id != null) {
-                            dao.deleteIngredient(id)
+                            dao.deleteIngredientByMongoId(id)
+                            onIngredientsUpdated?.invoke()
                         }
                     }
                 }

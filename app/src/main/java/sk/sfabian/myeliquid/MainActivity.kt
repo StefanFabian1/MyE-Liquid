@@ -19,10 +19,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +32,7 @@ import sk.sfabian.myeliquid.repository.IngredientInventoryRepository
 import sk.sfabian.myeliquid.repository.api.ApiClient
 import sk.sfabian.myeliquid.repository.room.AppDatabase
 import sk.sfabian.myeliquid.repository.Repository
+import sk.sfabian.myeliquid.repository.api.IngredientSseHandler
 import sk.sfabian.myeliquid.ui.screens.BottomNavigationBar
 import sk.sfabian.myeliquid.ui.screens.HomeScreen
 import sk.sfabian.myeliquid.ui.screens.IngredientsScreen
@@ -65,7 +68,22 @@ fun onMenuClick() {
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
-
+    val context = LocalContext.current
+    val database = AppDatabase.getDatabase(context)
+    val repository = IngredientInventoryRepository(
+        database.ingredientDao(), ApiClient.ingredientApi,
+        categoryDao = database.categoryDao(),
+        subcategoryDao = database.subCategoryDao()
+    )
+    val sseHandler = IngredientSseHandler(ApiClient.ingredientApi, database.ingredientDao())
+    val factory = IngredientInventoryViewModelFactory(repository, sseHandler)
+    val viewModel: IngredientInventoryViewModel = ViewModelProvider(
+        context as ComponentActivity,
+        factory
+    )[IngredientInventoryViewModel::class.java]
+    if (Configuration.getBoolean("enable_sse", false)) {
+        sseHandler.startListening()
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -102,28 +120,20 @@ fun MainScreen() {
         ) {
             composable("home") { HomeScreen(navController) }
             composable("ingredients") {
-                val context = LocalContext.current
-                val database = AppDatabase.getDatabase(context)
-                val repository = IngredientInventoryRepository(
-                    database.ingredientDao(), ApiClient.ingredientApi,
-                    movementDao = database.movementDao(),
-                    categoryDao = database.categoryDao(),
-                    subcategoryDao = database.subCategoryDao()
-                )
-                val factory = IngredientInventoryViewModelFactory(repository)
-                val viewModel: IngredientInventoryViewModel = ViewModelProvider(
-                    context as ComponentActivity,
-                    factory
-                )[IngredientInventoryViewModel::class.java]
                 IngredientsScreen(viewModel = viewModel, navController)
             }
-            composable("products") {
-                // Placeholder obrazovka pre produkty
-                Text("Products Screen")
-            }
-            composable("movements/{ingredientId}") { backStackEntry ->
+            composable(
+                route = "movements/{ingredientId}",
+                arguments = listOf(navArgument("ingredientId") { type = NavType.StringType })
+                ) { backStackEntry ->
                 val ingredientId = backStackEntry.arguments?.getString("ingredientId")
-                MovementsScreen(navController)
+                if (ingredientId != null) {
+                    MovementsScreen(
+                        viewModel,
+                        ingredientId = ingredientId,
+                        onBack = { navController.navigate("ingredients") }
+                    )
+                }
             }
         }
     }

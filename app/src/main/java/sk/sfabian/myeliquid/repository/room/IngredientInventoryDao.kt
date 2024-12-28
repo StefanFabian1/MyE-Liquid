@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import sk.sfabian.myeliquid.repository.model.Category
 import sk.sfabian.myeliquid.repository.model.Ingredient
@@ -31,7 +32,10 @@ interface IngredientInventoryDao {
     suspend fun insertIngredient(ingredient: Ingredient): Long
 
     @Query("DELETE FROM ingredients WHERE localId = :id")
-    suspend fun deleteIngredient(id: String)
+    suspend fun deleteIngredient(id: Long)
+
+    @Query("DELETE FROM ingredients WHERE mongoId = :mongoId")
+    suspend fun deleteIngredientByMongoId(mongoId: String)
 
     @Transaction
     suspend fun replaceAllIngredients(ingredients: List<Ingredient>) {
@@ -44,12 +48,15 @@ interface IngredientInventoryDao {
 
     @Insert
     suspend fun insertAll(ingredients: List<Ingredient>)
-}
 
-@Dao
-interface MovementDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMovement(movement: Movement)
+    @Insert
+    suspend fun insert(ingredient: Ingredient)
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun update(ingredient: Ingredient)
+
+    @Query("SELECT * FROM ingredients WHERE mongoId = :mongoId AND name = :name LIMIT 1")
+    suspend fun getIngredientByMongoIdAndName(mongoId: String, name: String): Ingredient?
 }
 
 @Dao

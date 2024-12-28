@@ -89,7 +89,7 @@ fun NavigationLinks(navController: NavController) {
     ) {
         NavigationCard(
             title = "Ingrediencie",
-            description = "View and manage your ingredient inventory.",
+            description = "Zobrazenie a manažment ingrediencií.",
             icon = Icons.Default.SoupKitchen,
             onClick = {
                 navController.navigate("ingredients") {
@@ -103,15 +103,15 @@ fun NavigationLinks(navController: NavController) {
         )
         NavigationCard(
             title = "Recipes",
-            description = "Create and edit e-liquid recipes.",
+            description = "Comming soon......",
             icon = Icons.Default.Receipt,
-            onClick = { navController.navigate("recipes") }
+            onClick = { /*navController.navigate("recipes")*/ }
         )
         NavigationCard(
             title = "Products",
-            description = "Prepare and showcase final products.",
+            description = "Comming soon......",
             icon = Icons.Default.Inventory,
-            onClick = { navController.navigate("products") }
+            onClick = { /*navController.navigate("products")*/ }
         )
     }
 }

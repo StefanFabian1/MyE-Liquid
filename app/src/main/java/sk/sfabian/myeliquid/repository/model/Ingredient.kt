@@ -11,7 +11,7 @@ data class Ingredient(
     val quantity: Double,
     val unit: String,
     val unitPrice: Double,
-    val category: String,
+    val category: String?,
     val subcategory: String?,
     val brand: String?,
     val description: String?

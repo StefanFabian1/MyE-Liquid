@@ -10,11 +10,10 @@ import sk.sfabian.myeliquid.repository.model.Ingredient
 import sk.sfabian.myeliquid.repository.model.Movement
 import sk.sfabian.myeliquid.repository.model.Subcategory
 
-@Database(entities = [Ingredient::class, Movement::class, Category::class, Subcategory::class], version = 1, exportSchema = false)
+@Database(entities = [Ingredient::class, Category::class, Subcategory::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun ingredientDao(): IngredientInventoryDao
-    abstract fun movementDao(): MovementDao
     abstract fun categoryDao(): CategoryDao
     abstract fun subCategoryDao(): SubcategoryDao
 
