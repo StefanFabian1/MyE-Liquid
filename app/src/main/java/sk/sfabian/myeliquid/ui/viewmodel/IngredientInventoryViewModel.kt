@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import sk.sfabian.myeliquid.Configuration
 import sk.sfabian.myeliquid.repository.IngredientInventoryRepository
 import sk.sfabian.myeliquid.repository.api.IngredientSseHandler
 import sk.sfabian.myeliquid.repository.model.Category
@@ -61,12 +62,18 @@ class IngredientInventoryViewModel(
     fun fetchIngredients() {
         viewModelScope.launch {
             repository.fetchAndStoreIngredients()
+            if (!Configuration.getBoolean("enable_sse", false)) {
+                refreshIngredients()
+            }
         }
     }
 
     fun deleteIngredient(ingredient: Ingredient) {
         viewModelScope.launch {
             repository.deleteIngredient(ingredient)
+            if (!Configuration.getBoolean("enable_sse", false)) {
+                refreshIngredients()
+            }
         }
     }
 
@@ -95,6 +102,9 @@ class IngredientInventoryViewModel(
                     description = null // Voliteľné
                 )
                 repository.addIngredient(newIngredient)
+                if (!Configuration.getBoolean("enable_sse", false)) {
+                    refreshIngredients()
+                }
             } catch (e: Exception) {
                 println("Chyba pri pridávaní ingrediencie: ${e.message}")
             }
@@ -137,6 +147,9 @@ class IngredientInventoryViewModel(
     fun updateIngredient(ingredient: Ingredient) {
         viewModelScope.launch {
             repository.updateIngredient(ingredient)
+            if (!Configuration.getBoolean("enable_sse", false)) {
+                refreshIngredients()
+            }
         }
     }
 
@@ -161,6 +174,9 @@ class IngredientInventoryViewModel(
                 timestamp = System.currentTimeMillis()
             )
             repository.addMovement(ingredientId, movement)
+            if (!Configuration.getBoolean("enable_sse", false)) {
+                refreshIngredients()
+            }
         }
     }
 

@@ -51,7 +51,7 @@ class IngredientInventoryRepository(
                 totalPrice = movement.totalPrice,
                 type = movement.type
             )
-            if (Configuration.getBoolean("enable_sse", false)) {
+            if (!Configuration.getBoolean("enable_sse", false)) {
                 val updatedIngredient = ingredientApi.fetchIngredient(ingredientId)
 
                 val localIngredient = ingredientDao.getIngredientByMongoIdAndName(
@@ -79,7 +79,7 @@ class IngredientInventoryRepository(
                 ingredient.mongoId?.let { mongoId ->
                     ingredientApi.deleteIngredient(mongoId)
                 }
-                if (Configuration.getBoolean("enable_sse", false)) {
+                if (!Configuration.getBoolean("enable_sse", false)) {
                     ingredientDao.deleteIngredient(ingredient.localId)
                 }
             } catch (e: Exception) {
@@ -94,7 +94,7 @@ class IngredientInventoryRepository(
                 ingredient.mongoId?.let { mongoId ->
                     ingredientApi.updateIngredient(mongoId, ingredient)
                 }
-                if (Configuration.getBoolean("enable_sse", false)) {
+                if (!Configuration.getBoolean("enable_sse", false)) {
                     ingredientDao.update(ingredient)
                 }
             } catch (e: Exception) {
@@ -131,7 +131,7 @@ class IngredientInventoryRepository(
                         )
                     )
                 }
-                if (Configuration.getBoolean("enable_sse", false)) {
+                if (!Configuration.getBoolean("enable_sse", false)) {
                     val updatedIngredient = savedIngredient.copy(
                         quantity = newIngredient.quantity,
                         unitPrice = newIngredient.unitPrice / newIngredient.quantity

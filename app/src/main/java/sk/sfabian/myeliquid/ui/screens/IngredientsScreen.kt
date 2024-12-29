@@ -63,7 +63,7 @@ import sk.sfabian.myeliquid.ui.viewmodel.IngredientInventoryViewModel
 
 @Composable
 fun IngredientsScreen(viewModel: IngredientInventoryViewModel, navController: NavHostController) {
-    if (Configuration.getBoolean("enable_sse", false)) {
+    if (!Configuration.getBoolean("enable_sse", false)) {
         viewModel.fetchIngredients()
     }
     val ingredients by viewModel.ingredients.collectAsState(initial = emptyList())
