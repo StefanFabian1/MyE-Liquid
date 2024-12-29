@@ -38,7 +38,7 @@ class IngredientInventoryViewModel(
     init {
         viewModelScope.launch {
             sseHandler.onIngredientsUpdated = {
-                refreshIngredients() // Manuálne načítanie nových dát
+                refreshIngredients()
             }
 
             searchQuery
@@ -161,7 +161,6 @@ class IngredientInventoryViewModel(
                 timestamp = System.currentTimeMillis()
             )
             repository.addMovement(ingredientId, movement)
-            fetchMovementsForIngredient(ingredientId)
         }
     }
 
@@ -169,7 +168,7 @@ class IngredientInventoryViewModel(
         _movements.value = emptyList()
     }
 
-    fun refreshIngredients() {
+    private fun refreshIngredients() {
         viewModelScope.launch {
             _ingredients.value = repository.getIngredients().firstOrNull() ?: emptyList()
         }

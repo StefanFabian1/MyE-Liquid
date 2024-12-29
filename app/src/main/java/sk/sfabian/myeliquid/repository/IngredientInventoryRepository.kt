@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import sk.sfabian.myeliquid.Configuration
 import sk.sfabian.myeliquid.repository.api.IngredientInventoryApi
 import sk.sfabian.myeliquid.repository.model.Category
 import sk.sfabian.myeliquid.repository.model.Ingredient
@@ -50,19 +51,20 @@ class IngredientInventoryRepository(
                 totalPrice = movement.totalPrice,
                 type = movement.type
             )
+            if (Configuration.getBoolean("enable_sse", false)) {
+                val updatedIngredient = ingredientApi.fetchIngredient(ingredientId)
 
-            val updatedIngredient = ingredientApi.fetchIngredient(ingredientId)
+                val localIngredient = ingredientDao.getIngredientByMongoIdAndName(
+                    mongoId = ingredientId,
+                    name = updatedIngredient.name
+                )
 
-            val localIngredient = ingredientDao.getIngredientByMongoIdAndName(
-                mongoId = ingredientId,
-                name = updatedIngredient.name
-            )
-
-            if (localIngredient != null) {
-                val ingredientToUpdate = updatedIngredient.copy(localId = localIngredient.localId)
-                ingredientDao.update(ingredientToUpdate)
-            } else {
-                println("No matching local ingredient found for mongoId: $ingredientId and name: ${updatedIngredient.name}")
+                if (localIngredient != null) {
+                    val ingredientToUpdate = updatedIngredient.copy(localId = localIngredient.localId)
+                    ingredientDao.update(ingredientToUpdate)
+                } else {
+                    println("No matching local ingredient found for mongoId: $ingredientId and name: ${updatedIngredient.name}")
+                }
             }
         } catch (e: Exception) {
             println("Error adding movement: ${e.message}")
@@ -77,7 +79,9 @@ class IngredientInventoryRepository(
                 ingredient.mongoId?.let { mongoId ->
                     ingredientApi.deleteIngredient(mongoId)
                 }
-                ingredientDao.deleteIngredient(ingredient.localId)
+                if (Configuration.getBoolean("enable_sse", false)) {
+                    ingredientDao.deleteIngredient(ingredient.localId)
+                }
             } catch (e: Exception) {
                 println("Chyba pri mazani ingrediencie: ${e.message}")
             }
@@ -90,7 +94,9 @@ class IngredientInventoryRepository(
                 ingredient.mongoId?.let { mongoId ->
                     ingredientApi.updateIngredient(mongoId, ingredient)
                 }
-                ingredientDao.update(ingredient)
+                if (Configuration.getBoolean("enable_sse", false)) {
+                    ingredientDao.update(ingredient)
+                }
             } catch (e: Exception) {
                 println("Chyba pri aktualizácii ingrediencie: ${e.message}")
             }
@@ -125,13 +131,14 @@ class IngredientInventoryRepository(
                         )
                     )
                 }
+                if (Configuration.getBoolean("enable_sse", false)) {
+                    val updatedIngredient = savedIngredient.copy(
+                        quantity = newIngredient.quantity,
+                        unitPrice = newIngredient.unitPrice / newIngredient.quantity
+                    )
 
-                val updatedIngredient = savedIngredient.copy(
-                    quantity = newIngredient.quantity,
-                    unitPrice = newIngredient.unitPrice / newIngredient.quantity
-                )
-
-                ingredientDao.insert(updatedIngredient)
+                    ingredientDao.insert(updatedIngredient)
+                }
             } catch (e: Exception) {
                 println("Chyba pri pridávaní ingrediencie: ${e.message}")
             }
@@ -143,7 +150,7 @@ class IngredientInventoryRepository(
             ingredientApi.getMovements(ingredientId)
         } catch (e: Exception) {
             println("Error fetching movements: ${e.message}")
-            emptyList() // Vráti prázdny zoznam pri chybe
+            emptyList()
         }
     }
 

@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -56,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.Popup
 import androidx.navigation.NavHostController
+import sk.sfabian.myeliquid.Configuration
 import sk.sfabian.myeliquid.repository.model.Category
 import sk.sfabian.myeliquid.repository.model.Ingredient
 import sk.sfabian.myeliquid.repository.model.Subcategory
@@ -63,7 +63,9 @@ import sk.sfabian.myeliquid.ui.viewmodel.IngredientInventoryViewModel
 
 @Composable
 fun IngredientsScreen(viewModel: IngredientInventoryViewModel, navController: NavHostController) {
-    viewModel.fetchIngredients()
+    if (Configuration.getBoolean("enable_sse", false)) {
+        viewModel.fetchIngredients()
+    }
     val ingredients by viewModel.ingredients.collectAsState(initial = emptyList())
     val searchQuery by viewModel.searchQuery.collectAsState()
     val categories by viewModel.categories.collectAsState()
